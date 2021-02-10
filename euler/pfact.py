@@ -1,10 +1,15 @@
-def factor(num):
-    primes = [];
-    i = 2;
-    while num !=1:
-        if num % i == 0:
-            primes.append(i);
-            num = num/i;
-            i = 1;
-        i+=1;
+def primeFact(num):
+    primes = []
+    while num %2 == 0:
+        primes.append(2)
+        num /=2
+
+    for i in range(3,int(math.sqrt(num)) + 1, 2):
+        while ( num % i == 0):
+            num /= i
+            primes.append(i)
+
+    if num != 1:
+        primes.append(num)
+
     return primes
