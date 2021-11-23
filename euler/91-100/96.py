@@ -23,6 +23,8 @@ class Blank():
         #print("num got!")
         if not self.single:
             raise Exception("not single!")
+        if len(self.potentialNums) == 0:
+            return False
         return self.potentialNums[0]
     
 class Grid():
@@ -77,8 +79,10 @@ class Grid():
             for y in range(9):
                 if type(self.grid[x][y]) is Blank:
                     if not self.removeCellSames(x,y):
+                        #print("remove cell fail")
                         return False
                     if not self.removeGridSames(x,y):
+                        #print("remove cell fail2")
                         return False
         return True
 
@@ -86,12 +90,72 @@ class Grid():
         for x in range(9):
             for y in range(9):
                 if type(self.grid[x][y]) is Blank and self.grid[x][y].single:
-                    self.grid[x][y] = self.grid[x][y].getNum()
+                    v = self.grid[x][y].getNum()
+                    if not v:
+                        #print(f"Failed at: x: {x}, y: {y}")
+                        return False
+                    #print(f"x: {x} y: {y}")
+                    self.grid[x][y] = v
+                    
+                    self.removeAllCurrentImpossible()
+        return True
+
+    def getBox(self, i):
+        #print(i)
+        locations = []
+        xCell = i // 3
+        yCell = i % 3
+        #print(f"x: {xCell}, y: {yCell}")
+        for i in range(xCell*3,xCell*3+3):
+            for j in range(yCell*3, yCell*3+3):
+                #print([i,j])
+                locations.append(self.grid[i][j])
+        return locations
+    
+    def setOnlyPossibles(self):
+        #check to see if the number can only be in one spot
+        #print("start")
+        for i in range(9):
+            #print("calling only possible")
+            row = self.grid[i]
+            column = [self.grid[j][i] for j in range(9)]
+            box = self.getBox(i)
+            for j in range(1,10):
+                #print(j)
+                for element in [row,column, box]:
+                    if j not in element:
+                        #print(element)
+                        spots = []
+                        for value in element:
+                            if type(value) is Blank:
+                                if j in value.potentialNums:
+                                    spots.append(value)
+                        #print(spots)
+                        if(len(spots) == 0):
+                            return False
+                        if(len(spots) == 1):
+                            #print(spots[0].potentialNums)
+                            spots[0].potentialNums = [j]
+                            spots[0].single = True
+                            
+                            #print(j)
+                            #print("found a only")
+
+        return True
+
+
+
+                    
 
     def cycle(self):
         if not self.removeAllCurrentImpossible():
             return False
-        self.replaceSingle()
+        if not self.setOnlyPossibles():
+            return False
+        if not self.replaceSingle():
+            return False
+
+
         return True
 
     def runCycles(self):
@@ -126,11 +190,11 @@ def guessAndCheck(grid, cycle):
     if not grid.runCycles():
         return False
     if grid.full():
-        return grid.grid
+        return grid
     i=0
     
     while i < 81:
-        if cycle < 4:
+        if cycle == 0:
             print(grid.toString())
         while i < 80 and type(grid.grid[i//9][i%9]) is int:
             i+=1
@@ -139,16 +203,16 @@ def guessAndCheck(grid, cycle):
             if type(grid.grid[8][8]) is int:
                 break
         g2 = copy.deepcopy(grid)
-        try:
-            for j in range(len(grid.grid[i//9][i%9].potentialNums)):
-            
-                g2.grid[i//9][i%9] = grid.grid[i//9][i%9].potentialNums[0]
-                r = guessAndCheck(g2, cycle + 1)
-                if r:
-                    return r
-        except:
-            print(i)
-            quit()
+
+        blank = g2.grid[i//9][i%9]
+        nums = blank.potentialNums
+        for j in range(len(nums)):
+            #print(f"setting ({i//9}, {i%9}) to {nums[j]}")
+            g2.grid[i//9][i%9] = nums[j]
+            r = guessAndCheck(copy.deepcopy(g2), cycle + 1)
+            if r:
+                return r
+            g2.grid[i//9][i%9] = blank
         i+=1
     return False
   
@@ -157,6 +221,7 @@ g = readGrids()
 g[-1][-1].append(6)
 i = 0
 count = 0
+total = 0
 for f in g:
     i+=1
     print(i)
@@ -166,8 +231,13 @@ for f in g:
     if g0.full():
         count+=1
         print("success!")
+        print(g0.toString())
+        total += g0.grid[0][0] * 100 + g0.grid[0][1] * 10 + g0.grid[0][2]
     else:
         t = guessAndCheck(g0, 0)
-        
+        print(t.toString())
         print("failed")
+        total += t.grid[0][0] * 100 + t.grid[0][1] * 10 + t.grid[0][2]
 print(count)
+print(total)
+#not 19074
